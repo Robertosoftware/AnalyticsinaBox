@@ -14,11 +14,11 @@ parameters:
   type: string  
 
 variables:
-  azureSubscription: 'APOps-SubscriptionCnx' 
-  resourceGroupName: 'P1-AnalyticsFundamentals-RG'
+  azureSubscription: 'Azure CSP Rockfeather' 
+  resourceGroupName: 'EUW_Training_Roberto'
   synapseManagedResourceGroup: 'P1-AnalyticsFundamentals-Managed-RG'
   prefix: 'ftatoolkit'
-  resourceLocation: 'eastus'
+  resourceLocation: 'westeurope'
   storageAccountType: 'Standard_LRS'
   sqlAdministratorLogin: 'sqladminuser'
   
