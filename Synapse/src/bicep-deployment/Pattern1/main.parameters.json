@@ -12,7 +12,7 @@
         "value": "Standard_LRS"
       },
       "synapseManagedResourceGroup": {
-        "value": "EUW_Training_Roberto"
+        "value": "SynReG1"
       },
       "sqlAdministratorLogin": {
         "value" : "sqladminuser"

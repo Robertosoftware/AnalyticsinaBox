@@ -1,0 +1,1231 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.25.53.49325",
+      "templateHash": "14906995245397906052"
+    }
+  },
+  "parameters": {
+    "ctrlDeploySampleArtifacts": {
+      "type": "bool",
+      "defaultValue": true
+    },
+    "utcValue": {
+      "type": "string",
+      "defaultValue": "[utcNow()]"
+    },
+    "prefix": {
+      "type": "string",
+      "defaultValue": "ftatoolkit",
+      "metadata": {
+        "description": "Unique Prefix"
+      }
+    },
+    "uniqueSuffix": {
+      "type": "string",
+      "defaultValue": "[substring(toLower(replace(uniqueString(subscription().id, resourceGroup().id, parameters('utcValue')), '-', '')), 1, 3)]",
+      "metadata": {
+        "description": "Unique Suffix"
+      }
+    },
+    "resourceLocation": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Resource Location"
+      }
+    },
+    "sampleArtifactCollectionName": {
+      "type": "string",
+      "defaultValue": "OpenDatasets",
+      "allowedValues": [
+        "OpenDatasets"
+      ]
+    },
+    "networkIsolationMode": {
+      "type": "string",
+      "defaultValue": "default",
+      "allowedValues": [
+        "default",
+        "vNet"
+      ],
+      "metadata": {
+        "description": "Network Isolation Mode"
+      }
+    },
+    "env": {
+      "type": "string",
+      "defaultValue": "Dev"
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {
+        "Owner": "ftatoolkit",
+        "Project": "ftatoolkit",
+        "Environment": "[parameters('env')]",
+        "Toolkit": "bicep",
+        "Name": "[parameters('prefix')]"
+      }
+    },
+    "storageAccountType": {
+      "type": "string",
+      "metadata": {
+        "description": "Storage Account Type"
+      }
+    },
+    "keyVaultName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-keyvault-{1}', parameters('prefix'), parameters('uniqueSuffix'))]",
+      "metadata": {
+        "description": "Key Vault Account Name"
+      }
+    },
+    "spObjectId": {
+      "type": "string",
+      "metadata": {
+        "description": "Your Service Principal Object ID"
+      }
+    },
+    "synapseManagedResourceGroup": {
+      "type": "string",
+      "metadata": {
+        "description": "Managed resource group is a container that holds ancillary resources created by Azure Synapse Analytics for your workspace. By default, a managed resource group is created for you when your workspace is created. Optionally, you can specify the name of the resource group that will be created by Azure Synapse Analytics to satisfy your organization’s resource group name policies."
+      }
+    },
+    "sqlAdministratorLogin": {
+      "type": "string",
+      "metadata": {
+        "description": "Provide the user name for SQL login."
+      }
+    },
+    "sqlAdministratorLoginPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The passwords must meet the following guidelines:<ul><li> The password does not contain the account name of the user.</li><li> The password is at least eight characters long.</li><li> The password contains characters from three of the following four categories:</li><ul><li>Latin uppercase letters (A through Z)</li><li>Latin lowercase letters (a through z)</li><li>Base 10 digits (0 through 9)</li><li>Non-alphanumeric characters such as: exclamation point (!), dollar sign ($), number sign (#), or percent (%).</li></ul></ul> Passwords can be up to 128 characters long. Use passwords that are as long and complex as possible. Visit <a href=https://aka.ms/azuresqlserverpasswordpolicy>aka.ms/azuresqlserverpasswordpolicy</a> for more details."
+      }
+    }
+  },
+  "variables": {
+    "storageAccountName": "[format('{0}adls{1}', parameters('prefix'), parameters('uniqueSuffix'))]",
+    "synapseWorkspaceName": "[format('{0}-synapse-{1}', parameters('prefix'), parameters('uniqueSuffix'))]",
+    "deploymentScriptUAMIName": "[toLower(format('{0}-uami', parameters('prefix')))]",
+    "sampleArtifactsParams": "[if(parameters('ctrlDeploySampleArtifacts'), format('-CtrlDeploySampleArtifacts $True -SampleArtifactCollectioName {0}', parameters('sampleArtifactCollectionName')), '')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "deploy_storage",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "resourceLocation": {
+            "value": "[parameters('resourceLocation')]"
+          },
+          "storageAccountName": {
+            "value": "[variables('storageAccountName')]"
+          },
+          "storageAccountContainer": {
+            "value": "[toLower(format('{0}-synapse', parameters('prefix')))]"
+          },
+          "storageAccountType": {
+            "value": "[parameters('storageAccountType')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.25.53.49325",
+              "templateHash": "5499738451748012816"
+            }
+          },
+          "parameters": {
+            "resourceLocation": {
+              "type": "string"
+            },
+            "storageAccountName": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 24,
+              "metadata": {
+                "description": "The name of the primary ADLS Gen2 Storage Account. If not provided, the workspace name will be used."
+              }
+            },
+            "storageAccountContainer": {
+              "type": "string"
+            },
+            "storageAccountType": {
+              "type": "string",
+              "defaultValue": "Standard_LRS",
+              "allowedValues": [
+                "Standard_LRS",
+                "Standard_GRS",
+                "Standard_ZRS",
+                "Premium_LRS"
+              ]
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Storage/storageAccounts",
+              "apiVersion": "2021-09-01",
+              "name": "[parameters('storageAccountName')]",
+              "kind": "StorageV2",
+              "location": "[parameters('resourceLocation')]",
+              "properties": {
+                "isHnsEnabled": true,
+                "minimumTlsVersion": "TLS1_2",
+                "networkAcls": {
+                  "bypass": "AzureServices",
+                  "virtualNetworkRules": [],
+                  "ipRules": [],
+                  "defaultAction": "Allow"
+                },
+                "supportsHttpsTrafficOnly": true,
+                "encryption": {
+                  "services": {
+                    "file": {
+                      "enabled": true
+                    },
+                    "blob": {
+                      "enabled": true
+                    }
+                  },
+                  "keySource": "Microsoft.Storage"
+                },
+                "accessTier": "Hot"
+              },
+              "sku": {
+                "name": "[parameters('storageAccountType')]"
+              },
+              "tags": {
+                "Type": "Synapse Data Lake Storage"
+              }
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices",
+              "apiVersion": "2021-09-01",
+              "name": "[format('{0}/{1}', parameters('storageAccountName'), 'default')]",
+              "properties": {
+                "cors": {
+                  "corsRules": []
+                },
+                "deleteRetentionPolicy": {
+                  "enabled": false
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+              "apiVersion": "2021-09-01",
+              "name": "[format('{0}/default/{1}', parameters('storageAccountName'), parameters('storageAccountContainer'))]",
+              "properties": {
+                "publicAccess": "None"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+              "apiVersion": "2021-09-01",
+              "name": "[format('{0}/default/bronze', parameters('storageAccountName'))]",
+              "properties": {
+                "publicAccess": "None"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+              "apiVersion": "2021-09-01",
+              "name": "[format('{0}/default/silver', parameters('storageAccountName'))]",
+              "properties": {
+                "publicAccess": "None"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+              "apiVersion": "2021-09-01",
+              "name": "[format('{0}/default/gold', parameters('storageAccountName'))]",
+              "properties": {
+                "publicAccess": "None"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+              "apiVersion": "2021-09-01",
+              "name": "[format('{0}/default/raw', parameters('storageAccountName'))]",
+              "properties": {
+                "publicAccess": "None"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+              "apiVersion": "2021-09-01",
+              "name": "[format('{0}/default/curated', parameters('storageAccountName'))]",
+              "properties": {
+                "publicAccess": "None"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+              "apiVersion": "2021-09-01",
+              "name": "[format('{0}/default/public', parameters('storageAccountName'))]",
+              "properties": {
+                "publicAccess": "None"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "storageAccountKey": {
+              "type": "string",
+              "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2021-09-01').keys[0].value]"
+            },
+            "storageAccountCnx": {
+              "type": "string",
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix=core.windows.net', parameters('storageAccountName'), listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2021-09-01').keys[0].value)]"
+            },
+            "storageAccounResourceId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "deploy_sqlserver",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "resourceLocation": {
+            "value": "[parameters('resourceLocation')]"
+          },
+          "sqlservername": {
+            "value": "[toLower(format('{0}-sql-{1}', parameters('prefix'), parameters('uniqueSuffix')))]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "administratorLogin": {
+            "value": "[parameters('sqlAdministratorLogin')]"
+          },
+          "administratorLoginPassword": {
+            "value": "[parameters('sqlAdministratorLoginPassword')]"
+          },
+          "databaseName": {
+            "value": "ftatoolkitsampledb"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.25.53.49325",
+              "templateHash": "3056550433939995126"
+            }
+          },
+          "parameters": {
+            "resourceLocation": {
+              "type": "string"
+            },
+            "sqlservername": {
+              "type": "string"
+            },
+            "tags": {
+              "type": "object"
+            },
+            "administratorLogin": {
+              "type": "string"
+            },
+            "administratorLoginPassword": {
+              "type": "securestring"
+            },
+            "databaseName": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Sql/servers",
+              "apiVersion": "2022-02-01-preview",
+              "name": "[parameters('sqlservername')]",
+              "location": "[parameters('resourceLocation')]",
+              "tags": "[parameters('tags')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "administratorLogin": "[parameters('administratorLogin')]",
+                "administratorLoginPassword": "[parameters('administratorLoginPassword')]"
+              }
+            },
+            {
+              "type": "Microsoft.Sql/servers/firewallRules",
+              "apiVersion": "2022-02-01-preview",
+              "name": "[format('{0}/{1}', parameters('sqlservername'), 'allowAll')]",
+              "properties": {
+                "startIpAddress": "0.0.0.0",
+                "endIpAddress": "255.255.255.255"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('sqlservername'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Sql/servers/databases",
+              "apiVersion": "2022-02-01-preview",
+              "name": "[format('{0}/{1}', parameters('sqlservername'), parameters('databaseName'))]",
+              "location": "[parameters('resourceLocation')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "GP_S_Gen5_1",
+                "tier": "GeneralPurpose"
+              },
+              "properties": {
+                "autoPauseDelay": 60,
+                "sampleName": "AdventureWorksLT",
+                "minCapacity": "[json('0.5')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Sql/servers', parameters('sqlservername'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "sqlServerNameDomainName": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Sql/servers', parameters('sqlservername')), '2022-02-01-preview').fullyQualifiedDomainName]"
+            },
+            "sqlServerName": {
+              "type": "string",
+              "value": "[parameters('sqlservername')]"
+            },
+            "sqlserverDBName": {
+              "type": "string",
+              "value": "[parameters('databaseName')]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "deploy_keyvault",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "resourceLocation": {
+            "value": "[parameters('resourceLocation')]"
+          },
+          "keyVaultName": {
+            "value": "[parameters('keyVaultName')]"
+          },
+          "deploymentScriptUAMIName": {
+            "value": "[variables('deploymentScriptUAMIName')]"
+          },
+          "spObjectId": {
+            "value": "[parameters('spObjectId')]"
+          },
+          "storageAccountKey": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'deploy_storage'), '2022-09-01').outputs.storageAccountKey.value]"
+          },
+          "storageAccountCnx": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'deploy_storage'), '2022-09-01').outputs.storageAccountCnx.value]"
+          },
+          "administratorLogin": {
+            "value": "[parameters('sqlAdministratorLogin')]"
+          },
+          "administratorLoginPassword": {
+            "value": "[parameters('sqlAdministratorLoginPassword')]"
+          },
+          "sqlServerName": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'deploy_sqlserver'), '2022-09-01').outputs.sqlServerNameDomainName.value]"
+          },
+          "sqlServerDBName": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'deploy_sqlserver'), '2022-09-01').outputs.sqlserverDBName.value]"
+          },
+          "sqlCnxString": {
+            "value": "[format('Server=tcp:{0},1433;Initial Catalog={1};Persist Security Info=False;User ID={2};Password={3};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;', reference(resourceId('Microsoft.Resources/deployments', 'deploy_sqlserver'), '2022-09-01').outputs.sqlServerNameDomainName.value, reference(resourceId('Microsoft.Resources/deployments', 'deploy_sqlserver'), '2022-09-01').outputs.sqlserverDBName.value, parameters('sqlAdministratorLogin'), parameters('sqlAdministratorLoginPassword'))]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.25.53.49325",
+              "templateHash": "17543329489490885167"
+            }
+          },
+          "parameters": {
+            "resourceLocation": {
+              "type": "string"
+            },
+            "keyVaultName": {
+              "type": "string"
+            },
+            "deploymentScriptUAMIName": {
+              "type": "string"
+            },
+            "spObjectId": {
+              "type": "string"
+            },
+            "storageAccountKey": {
+              "type": "securestring"
+            },
+            "storageAccountCnx": {
+              "type": "string"
+            },
+            "administratorLogin": {
+              "type": "string"
+            },
+            "administratorLoginPassword": {
+              "type": "securestring"
+            },
+            "sqlServerName": {
+              "type": "string"
+            },
+            "sqlServerDBName": {
+              "type": "string"
+            },
+            "sqlCnxString": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+              "apiVersion": "2018-11-30",
+              "name": "[parameters('deploymentScriptUAMIName')]",
+              "location": "[parameters('resourceLocation')]"
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults",
+              "apiVersion": "2021-11-01-preview",
+              "name": "[parameters('keyVaultName')]",
+              "location": "[parameters('resourceLocation')]",
+              "properties": {
+                "sku": {
+                  "family": "A",
+                  "name": "standard"
+                },
+                "tenantId": "[subscription().tenantId]",
+                "accessPolicies": [
+                  {
+                    "tenantId": "[subscription().tenantId]",
+                    "objectId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('deploymentScriptUAMIName')), '2018-11-30').principalId]",
+                    "permissions": {
+                      "secrets": [
+                        "get",
+                        "list",
+                        "set",
+                        "delete",
+                        "recover",
+                        "backup",
+                        "restore"
+                      ]
+                    }
+                  },
+                  {
+                    "tenantId": "[subscription().tenantId]",
+                    "objectId": "[parameters('spObjectId')]",
+                    "permissions": {
+                      "secrets": [
+                        "get",
+                        "list",
+                        "set",
+                        "delete",
+                        "recover",
+                        "backup",
+                        "restore"
+                      ]
+                    }
+                  }
+                ],
+                "enabledForDeployment": true,
+                "enabledForDiskEncryption": true,
+                "enabledForTemplateDeployment": true,
+                "enableRbacAuthorization": false,
+                "provisioningState": "Succeeded",
+                "publicNetworkAccess": "Enabled"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('deploymentScriptUAMIName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2021-11-01-preview",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'ADLS--AccountKey')]",
+              "properties": {
+                "attributes": {
+                  "enabled": true
+                },
+                "contentType": "string",
+                "value": "[parameters('storageAccountKey')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2021-11-01-preview",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'ADLS--Cnx')]",
+              "properties": {
+                "attributes": {
+                  "enabled": true
+                },
+                "contentType": "string",
+                "value": "[parameters('storageAccountCnx')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2021-11-01-preview",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'ServicePrincipalSecret')]",
+              "properties": {
+                "attributes": {
+                  "enabled": true
+                },
+                "contentType": "string",
+                "value": "ServicePrincipalSecret"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2021-11-01-preview",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'TenantId')]",
+              "properties": {
+                "attributes": {
+                  "enabled": true
+                },
+                "contentType": "string",
+                "value": "[subscription().tenantId]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2021-11-01-preview",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'ConnectionStrings--CnxDB')]",
+              "properties": {
+                "attributes": {
+                  "enabled": true
+                },
+                "contentType": "string",
+                "value": "[parameters('sqlCnxString')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2021-11-01-preview",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'ConnectionStrings--CnxDB--Admin')]",
+              "properties": {
+                "attributes": {
+                  "enabled": true
+                },
+                "contentType": "string",
+                "value": "[parameters('administratorLogin')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2021-11-01-preview",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'ConnectionStrings--CnxDB--Password')]",
+              "properties": {
+                "attributes": {
+                  "enabled": true
+                },
+                "contentType": "string",
+                "value": "[parameters('administratorLoginPassword')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2021-11-01-preview",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'AzureSQL-Server')]",
+              "properties": {
+                "attributes": {
+                  "enabled": true
+                },
+                "contentType": "string",
+                "value": "[parameters('sqlServerName')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults/secrets",
+              "apiVersion": "2021-11-01-preview",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'AzureSQL-DB')]",
+              "properties": {
+                "attributes": {
+                  "enabled": true
+                },
+                "contentType": "string",
+                "value": "[parameters('sqlServerDBName')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "keyVaultID": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+            },
+            "keyVaultName": {
+              "type": "string",
+              "value": "[parameters('keyVaultName')]"
+            },
+            "deploymentScriptUAMIName": {
+              "type": "string",
+              "value": "[parameters('deploymentScriptUAMIName')]"
+            },
+            "deploymentScriptUAMIResourceId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('deploymentScriptUAMIName'))]"
+            },
+            "deploymentScriptUAMIPrincipalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('deploymentScriptUAMIName')), '2018-11-30').principalId]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'deploy_sqlserver')]",
+        "[resourceId('Microsoft.Resources/deployments', 'deploy_storage')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "deploy_synapse",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "resourceLocation": {
+            "value": "[parameters('resourceLocation')]"
+          },
+          "synapseWorkspaceName": {
+            "value": "[toLower(variables('synapseWorkspaceName'))]"
+          },
+          "managedResourceGroupName": {
+            "value": "[parameters('synapseManagedResourceGroup')]"
+          },
+          "networkIsolationMode": {
+            "value": "[parameters('networkIsolationMode')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "defaultDataLakeStorageAccountName": {
+            "value": "[variables('storageAccountName')]"
+          },
+          "defaultDataLakeStorageFileSystemName": {
+            "value": "[toLower(format('{0}-synapse', parameters('prefix')))]"
+          },
+          "sqlAdministratorLogin": {
+            "value": "[parameters('sqlAdministratorLogin')]"
+          },
+          "sqlAdministratorLoginPassword": {
+            "value": "[parameters('sqlAdministratorLoginPassword')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.25.53.49325",
+              "templateHash": "1104027145900779641"
+            }
+          },
+          "parameters": {
+            "synapseWorkspaceName": {
+              "type": "string"
+            },
+            "resourceLocation": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]"
+            },
+            "networkIsolationMode": {
+              "type": "string"
+            },
+            "tags": {
+              "type": "object"
+            },
+            "sqlAdministratorLogin": {
+              "type": "string",
+              "metadata": {
+                "description": "Provide the user name for SQL login."
+              }
+            },
+            "sqlAdministratorLoginPassword": {
+              "type": "securestring",
+              "metadata": {
+                "description": "The passwords must meet the following guidelines:<ul><li> The password does not contain the account name of the user.</li><li> The password is at least eight characters long.</li><li> The password contains characters from three of the following four categories:</li><ul><li>Latin uppercase letters (A through Z)</li><li>Latin lowercase letters (a through z)</li><li>Base 10 digits (0 through 9)</li><li>Non-alphanumeric characters such as: exclamation point (!), dollar sign ($), number sign (#), or percent (%).</li></ul></ul> Passwords can be up to 128 characters long. Use passwords that are as long and complex as possible. Visit <a href=https://aka.ms/azuresqlserverpasswordpolicy>aka.ms/azuresqlserverpasswordpolicy</a> for more details."
+              }
+            },
+            "defaultDataLakeStorageAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "Data Lake Storage account that you will use for Synapse Workspace."
+              }
+            },
+            "defaultDataLakeStorageFileSystemName": {
+              "type": "string"
+            },
+            "defaultAdlsGen2AccountResourceId": {
+              "type": "string",
+              "defaultValue": ""
+            },
+            "managedResourceGroupName": {
+              "type": "string"
+            },
+            "createManagedPrivateEndpoint": {
+              "type": "bool",
+              "defaultValue": false
+            }
+          },
+          "variables": {
+            "defaultDataLakeStorageAccountUrl": "[format('https://{0}.dfs.core.windows.net', parameters('defaultDataLakeStorageAccountName'))]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Synapse/workspaces",
+              "apiVersion": "2021-06-01",
+              "name": "[parameters('synapseWorkspaceName')]",
+              "location": "[parameters('resourceLocation')]",
+              "tags": "[parameters('tags')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "azureADOnlyAuthentication": false,
+                "defaultDataLakeStorage": {
+                  "accountUrl": "[variables('defaultDataLakeStorageAccountUrl')]",
+                  "createManagedPrivateEndpoint": "[parameters('createManagedPrivateEndpoint')]",
+                  "filesystem": "[parameters('defaultDataLakeStorageFileSystemName')]",
+                  "resourceId": "[parameters('defaultAdlsGen2AccountResourceId')]"
+                },
+                "managedResourceGroupName": "[parameters('managedResourceGroupName')]",
+                "managedVirtualNetwork": "default",
+                "managedVirtualNetworkSettings": {
+                  "preventDataExfiltration": false
+                },
+                "publicNetworkAccess": "Enabled",
+                "sqlAdministratorLogin": "[parameters('sqlAdministratorLogin')]",
+                "sqlAdministratorLoginPassword": "[parameters('sqlAdministratorLoginPassword')]",
+                "trustedServiceBypassEnabled": true
+              }
+            },
+            {
+              "condition": "[equals(parameters('networkIsolationMode'), 'default')]",
+              "type": "Microsoft.Synapse/workspaces/firewallRules",
+              "apiVersion": "2021-06-01",
+              "name": "[format('{0}/{1}', parameters('synapseWorkspaceName'), 'AllowAllNetworks')]",
+              "properties": {
+                "startIpAddress": "0.0.0.0",
+                "endIpAddress": "255.255.255.255"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Synapse/workspaces', parameters('synapseWorkspaceName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Synapse/workspaces/firewallRules",
+              "apiVersion": "2021-06-01",
+              "name": "[format('{0}/{1}', parameters('synapseWorkspaceName'), 'AllowAllWindowsAzureIps')]",
+              "properties": {
+                "endIpAddress": "0.0.0.0",
+                "startIpAddress": "0.0.0.0"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Synapse/workspaces', parameters('synapseWorkspaceName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Synapse/workspaces/dedicatedSQLminimalTlsSettings",
+              "apiVersion": "2021-06-01",
+              "name": "[format('{0}/{1}', parameters('synapseWorkspaceName'), 'default')]",
+              "properties": {
+                "minimalTlsVersion": "1.2"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Synapse/workspaces', parameters('synapseWorkspaceName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Synapse/workspaces/managedIdentitySqlControlSettings",
+              "apiVersion": "2021-06-01",
+              "name": "[format('{0}/{1}', parameters('synapseWorkspaceName'), 'default')]",
+              "properties": {
+                "grantSqlControlToManagedIdentity": {
+                  "desiredState": "Enabled"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Synapse/workspaces', parameters('synapseWorkspaceName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "synapseManagedIdentityId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Synapse/workspaces', parameters('synapseWorkspaceName')), '2021-06-01', 'full').identity.principalId]"
+            },
+            "synapseWorkspaceID": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Synapse/workspaces', parameters('synapseWorkspaceName'))]"
+            },
+            "synapseWorkspaceName": {
+              "type": "string",
+              "value": "[parameters('synapseWorkspaceName')]"
+            },
+            "synapseSQLDedicatedEndpoint": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Synapse/workspaces', parameters('synapseWorkspaceName')), '2021-06-01').connectivityEndpoints.sql]"
+            },
+            "synapseSQLServerlessEndpoint": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Synapse/workspaces', parameters('synapseWorkspaceName')), '2021-06-01').connectivityEndpoints.sqlOnDemand]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'deploy_storage')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "deploy_KeyVaultSynapseAccessPolicy",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "keyVaultName": {
+            "value": "[parameters('keyVaultName')]"
+          },
+          "synapseManagedIdentityId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'deploy_synapse'), '2022-09-01').outputs.synapseManagedIdentityId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.25.53.49325",
+              "templateHash": "10783295502513958537"
+            }
+          },
+          "parameters": {
+            "keyVaultName": {
+              "type": "string"
+            },
+            "synapseManagedIdentityId": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.KeyVault/vaults/accessPolicies",
+              "apiVersion": "2021-06-01-preview",
+              "name": "[format('{0}/{1}', parameters('keyVaultName'), 'add')]",
+              "properties": {
+                "accessPolicies": [
+                  {
+                    "objectId": "[parameters('synapseManagedIdentityId')]",
+                    "tenantId": "[subscription().tenantId]",
+                    "permissions": {
+                      "secrets": [
+                        "get",
+                        "list"
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'deploy_synapse')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "deploy_RBAC",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "dataLakeAccountName": {
+            "value": "[variables('storageAccountName')]"
+          },
+          "synapseWorkspaceName": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'deploy_synapse'), '2022-09-01').outputs.synapseWorkspaceName.value]"
+          },
+          "synapseManagedIdentityId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'deploy_synapse'), '2022-09-01').outputs.synapseManagedIdentityId.value]"
+          },
+          "UAMIPrincipalID": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'deploy_keyvault'), '2022-09-01').outputs.deploymentScriptUAMIPrincipalId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.25.53.49325",
+              "templateHash": "17858967356721809729"
+            }
+          },
+          "parameters": {
+            "dataLakeAccountName": {
+              "type": "string"
+            },
+            "synapseWorkspaceName": {
+              "type": "string"
+            },
+            "synapseManagedIdentityId": {
+              "type": "string"
+            },
+            "UAMIPrincipalID": {
+              "type": "string"
+            }
+          },
+          "variables": {
+            "azureRBACStorageBlobDataContributorRoleID": "ba92f5b4-2d11-453d-a403-e96b0029c9fe",
+            "azureRBACOwnerRoleID": "8e3af657-a8ff-443c-a75c-2fe8c4bcb635"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2020-10-01-preview",
+              "scope": "[format('Microsoft.Synapse/workspaces/{0}', parameters('synapseWorkspaceName'))]",
+              "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', parameters('synapseWorkspaceName')), parameters('UAMIPrincipalID'))]",
+              "properties": {
+                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('azureRBACOwnerRoleID'))]",
+                "principalId": "[parameters('UAMIPrincipalID')]",
+                "principalType": "ServicePrincipal"
+              }
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2020-10-01-preview",
+              "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', parameters('synapseWorkspaceName')), resourceGroup().id)]",
+              "properties": {
+                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('azureRBACOwnerRoleID'))]",
+                "principalId": "[parameters('UAMIPrincipalID')]",
+                "principalType": "ServicePrincipal"
+              }
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2020-10-01-preview",
+              "scope": "[format('Microsoft.Storage/storageAccounts/{0}', parameters('dataLakeAccountName'))]",
+              "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', parameters('synapseWorkspaceName')), parameters('dataLakeAccountName'))]",
+              "properties": {
+                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('azureRBACStorageBlobDataContributorRoleID'))]",
+                "principalId": "[parameters('synapseManagedIdentityId')]",
+                "principalType": "ServicePrincipal"
+              }
+            },
+            {
+              "type": "Microsoft.Synapse/workspaces/administrators",
+              "apiVersion": "2021-06-01",
+              "name": "[format('{0}/{1}', parameters('synapseWorkspaceName'), 'activeDirectory')]",
+              "properties": {
+                "administratorType": "ActiveDirectory",
+                "sid": "[parameters('UAMIPrincipalID')]",
+                "tenantId": "[subscription().tenantId]"
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'deploy_keyvault')]",
+        "[resourceId('Microsoft.Resources/deployments', 'deploy_synapse')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "PostDeploymentScript",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "deploymentDatetime": {
+            "value": "[parameters('utcValue')]"
+          },
+          "deploymentScriptUAMIResourceId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'deploy_keyvault'), '2022-09-01').outputs.deploymentScriptUAMIResourceId.value]"
+          },
+          "resourceLocation": {
+            "value": "[parameters('resourceLocation')]"
+          },
+          "synapseScriptArguments": {
+            "value": "[format('-SubscriptionID {0} -ResourceGroupName {1} -ResourceGroupLocation {2} {3} {4} {5} {6} {7} {8}', subscription().subscriptionId, resourceGroup().name, parameters('resourceLocation'), format('-SynapseWorkspaceName {0} -SynapseWorkspaceID {1}', variables('synapseWorkspaceName'), reference(resourceId('Microsoft.Resources/deployments', 'deploy_synapse'), '2022-09-01').outputs.synapseWorkspaceID.value), format('-DataLakeAccountName {0} -DataLakeAccountResourceID {1}', variables('storageAccountName'), reference(resourceId('Microsoft.Resources/deployments', 'deploy_storage'), '2022-09-01').outputs.storageAccounResourceId.value), format('-KeyVaultName {0} -KeyVaultID {1}', parameters('keyVaultName'), reference(resourceId('Microsoft.Resources/deployments', 'deploy_keyvault'), '2022-09-01').outputs.keyVaultID.value), format('-AzureSQLServerName {0}', reference(resourceId('Microsoft.Resources/deployments', 'deploy_sqlserver'), '2022-09-01').outputs.sqlServerName.value), format('-UAMIPrincipalID {0}', reference(resourceId('Microsoft.Resources/deployments', 'deploy_keyvault'), '2022-09-01').outputs.deploymentScriptUAMIPrincipalId.value), variables('sampleArtifactsParams'))]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.25.53.49325",
+              "templateHash": "16840766484559338157"
+            }
+          },
+          "parameters": {
+            "deploymentDatetime": {
+              "type": "string"
+            },
+            "resourceLocation": {
+              "type": "string"
+            },
+            "deploymentScriptUAMIResourceId": {
+              "type": "string"
+            },
+            "synapseScriptArguments": {
+              "type": "string"
+            }
+          },
+          "variables": {
+            "$fxv#0": "<#\r\n .NOTES\r\n        =========================================================================================================\r\n        Created by:       Author: Analytics Fundamentals - FTA Toolkit Team\r\n        Created on:       09/13/2022\r\n        =========================================================================================================\r\n\r\n .DESCRIPTION\r\n        You can run the script one of two ways:\r\n        1. Using Inline Parameters\r\n                .\\SynapseDeployArtifacts.ps1 -SubscriptionID xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx -ResourceGroupName P1-AnalyticsFundamentals-RG -ResourceGroupLocation eastus -KeyVaultName ftatoolkit-keyvault-xxx -KeyVaultID /subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/P1-AnalyticsFundamentals-RG/providers/Microsoft.KeyVault/vaults/ftatoolkit-keyvault-xxx -SynapseWorkspaceName ftatoolkit-synapse-xxx -SynapseWorkspaceID /subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/P1-AnalyticsFundamentals-RG/providers/Microsoft.Synapse/workspaces/ftatoolkit-synapse-xxx -DataLakeAccountName ftatoolkitadlsxxx -DataLakeAccountResourceID /subscriptions/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/resourceGroups/P1-AnalyticsFundamentals-RG/providers/Microsoft.Storage/storageAccounts/ftatoolkitadlsxxx -AzureSQLServerName ftatoolkit-sql-xxx -UAMIPrincipalID xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx -CtrlDeploySampleArtifacts $True -SampleArtifactCollectioName OpenDatasets\r\n#>\r\n\r\n#---------------------------------------------------------[Parameters]-----------------------------------------------------\r\n#region Parameters\r\nparam(\r\n  [string] $SubscriptionID,\r\n  [string] $ResourceGroupName,\r\n  [string] $ResourceGroupLocation,\r\n  [string] $SynapseWorkspaceName,\r\n  [string] $SynapseWorkspaceID,\r\n  [string] $DataLakeAccountName,\r\n  [string] $DataLakeAccountResourceID,\r\n  [string] $KeyVaultName,\r\n  [string] $KeyVaultID,\r\n  [string] $AzureSQLServerName,\r\n  [string] $UAMIPrincipalID,\r\n  [Parameter(Mandatory=$false)]\r\n  [bool] $CtrlDeploySampleArtifacts,\r\n  [AllowEmptyString()]\r\n  [Parameter(Mandatory=$false)]\r\n  [string] $SampleArtifactCollectioName\r\n)\r\n\r\n#>\r\n#endregion Parameters\r\n\r\nClear-Host\r\n\r\n#------------------------------------------------------------------------------------------------------------\r\n# FUNCTION DEFINITIONS\r\n#------------------------------------------------------------------------------------------------------------\r\nfunction Set-SynapseControlPlaneOperation{\r\n  param (\r\n    [string] $SynapseWorkspaceID,\r\n    [string] $HttpRequestBody\r\n  )\r\n\r\n  $uri = \"https://management.azure.com$SynapseWorkspaceID`?api-version=2021-06-01\"\r\n  $token = (Get-AzAccessToken -Resource \"https://management.azure.com\").Token\r\n  $headers = @{ Authorization = \"Bearer $token\" }\r\n\r\n  $retrycount = 1\r\n  $completed = $false\r\n  $secondsDelay = 60\r\n\r\n  while (-not $completed) {\r\n    try {\r\n      Invoke-RestMethod -Method Patch -ContentType \"application/json\" -Uri $uri -Headers $headers -Body $HttpRequestBody -ErrorAction Stop\r\n      Write-Host \"Control plane operation completed successfully.\"\r\n      $completed = $true\r\n    }\r\n    catch {\r\n      if ($retrycount -ge $retries) {\r\n          Write-Host \"Control plane operation failed the maximum number of $retryCount times.\"\r\n          Write-Warning $Error[0]\r\n          throw\r\n      } else {\r\n          Write-Host \"Control plane operation failed $retryCount time(s). Retrying in $secondsDelay seconds.\"\r\n          Write-Warning $Error[0]\r\n          Start-Sleep $secondsDelay\r\n          $retrycount++\r\n      }\r\n    }\r\n  }\r\n}\r\n\r\nfunction Save-SynapseLinkedService{\r\n  param (\r\n    [string] $SynapseWorkspaceName,\r\n    [string] $LinkedServiceName,\r\n    [string] $LinkedServiceRequestBody\r\n  )\r\n\r\n  [string] $uri = \"https://$SynapseWorkspaceName.dev.azuresynapse.net/linkedservices/$LinkedServiceName\"\r\n  $uri += \"?api-version=2019-06-01-preview\"\r\n\r\n  Write-Host \"Creating Linked Service [$LinkedServiceName]...\"\r\n  $retrycount = 1\r\n  $completed = $false\r\n  $secondsDelay = 60\r\n\r\n  while (-not $completed) {\r\n    try {\r\n      Write-Host \"URI: $uri\"\r\n      Write-Host \"Body: $LinkedServiceRequestBody\"\r\n      Write-Host \"Headers: $headers\"\r\n\r\n      Invoke-RestMethod -Method Put -ContentType \"application/json\" -Uri $uri -Headers $headers -Body $LinkedServiceRequestBody -ErrorAction Stop\r\n      Write-Host \"Linked service [$LinkedServiceName] created successfully.\"\r\n      $completed = $true\r\n    }\r\n    catch {\r\n      if ($retrycount -ge $retries) {\r\n          Write-Host \"Linked service [$LinkedServiceName] creation failed the maximum number of $retryCount times.\"\r\n          Write-Warning $Error[0]\r\n          throw\r\n      } else {\r\n          Write-Host \"Linked service [$LinkedServiceName] creation failed $retryCount time(s). Retrying in $secondsDelay seconds.\"\r\n          Write-Warning $Error[0]\r\n          Start-Sleep $secondsDelay\r\n          $retrycount++\r\n      }\r\n    }\r\n  }\r\n}\r\n\r\nfunction Save-SynapseSampleArtifacts{\r\n  param (\r\n      [string] $SynapseWorkspaceName,\r\n      [string] $SampleArtifactCollectionName\r\n  )\r\n\r\n  #Install Synapse PowerShell Module\r\n  #You need to install latest Az.Synapse module and make sure that Az.Account Module is at least at Version 2.10\r\n  if (Get-Module -ListAvailable -Name \"Az.Synapse\") {\r\n    Write-Host \"PowerShell Module Az.Synapse already installed.\"\r\n  }\r\n  else {\r\n    Install-Module Az.Synapse -Force\r\n    Import-Module Az.Synapse\r\n  }\r\n\r\n  #Add System.Web type to encode/decode URL\r\n  Add-Type -AssemblyName System.Web\r\n\r\n  #Authenticate for REST API calls\r\n  $token = (Get-AzAccessToken -Resource \"https://dev.azuresynapse.net\").Token\r\n  $headers = @{ Authorization = \"Bearer $token\" }\r\n\r\n  $synapseTokens = @{\"`#`#azsynapsewks`#`#\" = $SynapseWorkspaceName; }\r\n  $indexFileUrl = \"https://raw.githubusercontent.com/AndresPad/FTAToolkitArtifacts/main/Sample/index.json\"\r\n  #$indexFileUrl = \"index.json\"\r\n  #$sampleCodeIndex = Get-Content -Raw -Path index.json | ConvertFrom-Json\r\n  $sampleCodeIndex = Invoke-WebRequest $indexFileUrl | ConvertFrom-Json\r\n\r\n  Write-Host \"Deploying SynapseSampleArtifacts:\"\r\n\r\n  foreach($sampleArtifactCollection in $sampleCodeIndex)\r\n  {\r\n    if ($sampleArtifactCollection.template -eq $SampleArtifactCollectionName) {\r\n      Write-Host \"Deploying Sample Artifact Collection: $($sampleArtifactCollection.template)\"\r\n      Write-Host \"-----------------------------------------------------------------------\"\r\n\r\n      #Create SQL Script artifacts.\r\n      #----------------------------------------------------------------------------------\r\n      Write-Host \"Deploying SQL Scripts:\"\r\n      Write-Host \"-----------------------------------------------------------------------\"\r\n\r\n      foreach($sqlScript in $sampleArtifactCollection.artifacts.sqlScripts)\r\n      {\r\n        $fileContent = Invoke-WebRequest $sqlScript.definitionFilePath\r\n\r\n        if ($sqlScript.tokens.length -gt 0) {\r\n          foreach($token in $sqlScript.tokens)\r\n          {\r\n              $fileContent = $fileContent -replace $token, $synapseTokens.Get_Item($token)\r\n          }\r\n        }\r\n\r\n        if ($sqlScript.interface.ToLower() -eq \"powershell\") {\r\n          Write-Host \"Creating SQL Script: $($sqlScript.name) via PowerShell\"\r\n          $definitionFilePath = [guid]::NewGuid()\r\n          Set-Content -Path $definitionFilePath $fileContent\r\n          Set-AzSynapseSqlScript -WorkspaceName $SynapseWorkspaceName -Name $sqlScript.name -DefinitionFile $definitionFilePath -FolderPath $sqlScript.workspaceFolderPath\r\n          Remove-Item -Path $definitionFilePath\r\n        }\r\n        elseif ($sqlScript.interface.ToLower() -eq \"rest\")\r\n        {\r\n            Write-Host \"Creating SQL Script: $($sqlScript.name) via REST API\"\r\n            $subresource = \"sqlScripts\"\r\n            $uri = \"https://$SynapseWorkspaceName.dev.azuresynapse.net/$subresource/$($sqlScript.name)?api-version=2020-02-01\"\r\n\r\n            #Assign Synapse Workspace Administrator Role to UAMI\r\n            $body = $fileContent\r\n            Invoke-RestMethod -Method Put -ContentType \"application/json\" -Uri $uri -Headers $headers -Body $body\r\n        }\r\n      }\r\n\r\n      #Create Linked Service artifacts.\r\n      #----------------------------------------------------------------------------------\r\n      Write-Host \"-----------------------------------------------------------------------\"\r\n      Write-Host \"Deploying Linked Service:\"\r\n      Write-Host \"-----------------------------------------------------------------------\"\r\n\r\n      foreach($linkedService in $sampleArtifactCollection.artifacts.linkedServices)\r\n      {\r\n        $fileContent = Invoke-WebRequest $linkedService.definitionFilePath\r\n\r\n        if ($linkedService.tokens.length -gt 0) {\r\n            foreach($token in $linkedService.tokens)\r\n            {\r\n                $fileContent = $fileContent -replace $token, $synapseTokens.Get_Item($token)\r\n            }\r\n        }\r\n\r\n        $definitionFilePath = [guid]::NewGuid()\r\n        Set-Content -Path $definitionFilePath $fileContent\r\n        Set-AzSynapseLinkedService -WorkspaceName $SynapseWorkspaceName -Name $linkedService.name -DefinitionFile $definitionFilePath\r\n        Remove-Item -Path $definitionFilePath\r\n      }\r\n\r\n      #Create Dataset artifacts.\r\n      #----------------------------------------------------------------------------------\r\n      Write-Host \"-----------------------------------------------------------------------\"\r\n      Write-Host \"Deploying Datasets:\"\r\n      Write-Host \"-----------------------------------------------------------------------\"\r\n\r\n      foreach($dataset in $sampleArtifactCollection.artifacts.datasets)\r\n      {\r\n        $fileContent = Invoke-WebRequest $dataset.definitionFilePath\r\n\r\n        if ($dataset.tokens.length -gt 0) {\r\n            foreach($token in $dataset.tokens)\r\n            {\r\n                $fileContent = $fileContent -replace $token, $synapseTokens.Get_Item($token)\r\n            }\r\n        }\r\n\r\n        $definitionFilePath = [guid]::NewGuid()\r\n        Set-Content -Path $definitionFilePath $fileContent\r\n        Set-AzSynapseDataset -WorkspaceName $SynapseWorkspaceName -Name $dataset.name -DefinitionFile $definitionFilePath\r\n        Remove-Item -Path $definitionFilePath\r\n      }\r\n\r\n      #Create Dataflows artifacts.\r\n      #----------------------------------------------------------------------------------\r\n      Write-Host \"-----------------------------------------------------------------------\"\r\n      Write-Host \"Deploying Dataflows:\"\r\n      Write-Host \"-----------------------------------------------------------------------\"\r\n\r\n      foreach($dataflow in $sampleArtifactCollection.artifacts.dataflows)\r\n      {\r\n        $fileContent = Invoke-WebRequest $dataflow.definitionFilePath\r\n\r\n        if ($dataflow.tokens.length -gt 0) {\r\n            foreach($token in $dataflow.tokens)\r\n            {\r\n                $fileContent = $fileContent -replace $token, $synapseTokens.Get_Item($token)\r\n            }\r\n        }\r\n\r\n        $definitionFilePath = [guid]::NewGuid()\r\n        Set-Content -Path $definitionFilePath $fileContent\r\n        Set-AzSynapseDataFlow -WorkspaceName $SynapseWorkspaceName -Name $dataflow.name -DefinitionFile $definitionFilePath\r\n        Remove-Item -Path $definitionFilePath\r\n      }\r\n\r\n      #Create Pipeline artifacts.\r\n      #----------------------------------------------------------------------------------\r\n      Write-Host \"-----------------------------------------------------------------------\"\r\n      Write-Host \"Deploying Pipelines:\"\r\n      Write-Host \"-----------------------------------------------------------------------\"\r\n\r\n      foreach($pipeline in $sampleArtifactCollection.artifacts.pipelines)\r\n      {\r\n        $fileContent = Invoke-WebRequest $pipeline.definitionFilePath\r\n\r\n        if ($pipeline.tokens.length -gt 0) {\r\n\r\n            foreach($token in $pipeline.tokens)\r\n            {\r\n                $fileContent = $fileContent -replace $token, $synapseTokens.Get_Item($token)\r\n            }\r\n        }\r\n\r\n        $definitionFilePath = [guid]::NewGuid()\r\n        Set-Content -Path $definitionFilePath $fileContent\r\n        Set-AzSynapsePipeline -WorkspaceName $SynapseWorkspaceName -Name $pipeline.name -DefinitionFile $definitionFilePath\r\n        Remove-Item -Path $definitionFilePath\r\n      }\r\n\r\n      #Create Notebook artifacts.\r\n      #----------------------------------------------------------------------------------\r\n      Write-Host \"-----------------------------------------------------------------------\"\r\n      Write-Host \"Deploying Notebooks:\"\r\n      Write-Host \"-----------------------------------------------------------------------\"\r\n\r\n      foreach($notebook in $sampleArtifactCollection.artifacts.notebooks)\r\n      {\r\n        $fileContent = Invoke-WebRequest $notebook.definitionFilePath\r\n\r\n        if ($notebook.tokens.length -gt 0) {\r\n          foreach($token in $notebook.tokens)\r\n          {\r\n              $fileContent = $fileContent -replace $token, $synapseTokens.Get_Item($token)\r\n          }\r\n        }\r\n\r\n        if ($notebook.interface.ToLower() -eq \"powershell\") {\r\n          $definitionFilePath = [guid]::NewGuid()\r\n          Set-Content -Path $definitionFilePath $fileContent\r\n          Set-AzSynapseNotebook -WorkspaceName $SynapseWorkspaceName -Name $notebook.name -DefinitionFile $definitionFilePath -FolderPath $notebook.workspaceFolderPath\r\n          Remove-Item -Path $definitionFilePath\r\n        }\r\n        elseif ($notebook.interface.ToLower() -eq \"rest\") {\r\n          ## Action to perform if the condition is true #>\r\n        }\r\n      }\r\n      break\r\n    }\r\n  }\r\n}\r\n\r\n$retries = 10\r\n$secondsDelay = 60\r\n#---------------------------------------------------------[Entry Point - Execution of Script Starts Here]-----------------------------------------------------\r\n#region Entry Point - MAIN SCRIPT BODY\r\nWrite-Host \"#--------------------------------------------------------------------------------------------------------\";\r\n    Write-Host \"  Analytics Fundamentals - Synapse Analytics Workspace Artifacts Creation\" -ForegroundColor Gray\r\n    Write-Output \"  Display Params\"\r\n\r\n    $output = 'Your Params {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}' -f $SubscriptionID, $ResourceGroupName, $ResourceGroupLocation, $SynapseWorkspaceName, $SynapseWorkspaceID, $DataLakeAccountName, $DataLakeAccountResourceID, $KeyVaultName, $KeyVaultID, $AzureSQLServerName, $UAMIPrincipalID\r\n\r\n    Write-Host \"    SubscriptionID: $SubscriptionID \"\r\n    Write-Host \"    ResourceGroupName: $ResourceGroupName \"\r\n    Write-Host \"    ResourceGroupLocation: $ResourceGroupLocation \"\r\n    Write-Host \"    SynapseWorkspaceName: $SynapseWorkspaceName \"\r\n    Write-Host \"    SynapseWorkspaceID: $SynapseWorkspaceID \"\r\n    Write-Host \"    DataLakeAccountName: $DataLakeAccountName \"\r\n    Write-Host \"    DataLakeAccountResourceID: $DataLakeAccountResourceID \"\r\n    Write-Host \"    KeyVaultName: $KeyVaultName \"\r\n    Write-Host \"    KeyVaultID: $KeyVaultID \"\r\n    Write-Host \"    AzureSQLServerName: $AzureSQLServerName \"\r\n    Write-Host \"    UAMIPrincipalID: $UAMIPrincipalID \"\r\n\r\n    $DeploymentScriptOutputs = @{}\r\n    $DeploymentScriptOutputs['text'] = $output\r\n\r\n#------------------------------------------------------------------------------------------------------------\r\n# CONTROL PLANE OPERATION: ASSIGN SYNAPSE WORKSPACE ADMINISTRATOR TO USER-ASSIGNED MANAGED IDENTITY\r\n# UAMI needs Synapse Admin rights before it can make calls to the Data Plane APIs to create Synapse objects\r\n#------------------------------------------------------------------------------------------------------------\r\n\r\n$token = (Get-AzAccessToken -Resource \"https://dev.azuresynapse.net\").Token\r\n$headers = @{ Authorization = \"Bearer $token\" }\r\n\r\n$uri = \"https://$SynapseWorkspaceName.dev.azuresynapse.net/rbac/roleAssignments?api-version=2020-02-01-preview\"\r\n\r\n#Assign Synapse Workspace Administrator Role to UAMI\r\n$body = \"{\r\n  roleId: \"\"6e4bf58a-b8e1-4cc3-bbf9-d73143322b78\"\",\r\n  principalId: \"\"$UAMIPrincipalID\"\"\r\n}\"\r\n\r\nWrite-Host \"Assign Synapse Administrator Role to UAMI...\"\r\nInvoke-RestMethod -Method Post -ContentType \"application/json\" -Uri $uri -Headers $headers -Body $body\r\n\r\n#------------------------------------------------------------------------------------------------------------\r\n# DATA PLANE OPERATION: CREATE AZURE KEY VAULT LINKED SERVICE\r\n#------------------------------------------------------------------------------------------------------------\r\n\r\n#Create AKV Linked Service. Linked Service name same as Key Vault's.\r\n$body = \"{\r\n  name: \"\"$KeyVaultName\"\",\r\n  properties: {\r\n      annotations: [],\r\n      type: \"\"AzureKeyVault\"\",\r\n      typeProperties: {\r\n          baseUrl: \"\"https://$KeyVaultName.vault.azure.net/\"\"\r\n      }\r\n  }\r\n}\"\r\n\r\nWrite-Host \"Create AKV Linked Service...\"\r\nSave-SynapseLinkedService $SynapseWorkspaceName $KeyVaultName $body\r\n\r\n#Create a Second AKV Linked Service that uses parameters to connect to the Key Vault created through the bicep\r\n$body = \"{\r\n  name: \"\"$KeyVaultName-with-params\"\",\r\n  properties: {\r\n    parameters: {\r\n\t\t\tkeyVaultName: {\r\n\t\t\t\ttype: \"\"string\"\",\r\n        defaultValue: \"\"$KeyVaultName\"\"\r\n\t\t\t}\r\n\t\t},\r\n    annotations: [],\r\n    type: \"\"AzureKeyVault\"\",\r\n    typeProperties: {\r\n      baseUrl: \"\"@{concat('https://',linkedService().keyVaultName,'.vault.azure.net/')}\"\"\r\n    }\r\n  }\r\n}\"\r\n\r\nWrite-Host \"Create AKV Linked Service with parameters...\"\r\nSave-SynapseLinkedService $SynapseWorkspaceName \"$KeyVaultName-with-params\" $body\r\n\r\n#------------------------------------------------------------------------------------------------------------\r\n# DATA PLANE OPERATION: CREATE ADLS LINKED SERVICE\r\n#------------------------------------------------------------------------------------------------------------\r\n $dataLakeAccountNames = @($DataLakeAccountName)\r\n $dataLakeDFSEndpoints = @(\"https://$DataLakeAccountName.dfs.core.windows.net\")\r\n\r\n for ($i = 0; $i -lt $dataLakeAccountNames.Length; $i++) {\r\n\r\n  $body = \"{\r\n    name: \"\"$($dataLakeAccountNames[$i])\"\",\r\n    properties: {\r\n      annotations: [],\r\n      type: \"\"AzureBlobFS\"\",\r\n      typeProperties: {\r\n        url: \"\"$($dataLakeDFSEndpoints[$i])\"\"\r\n      },\r\n      connectVia: {\r\n        referenceName: \"\"AutoResolveIntegrationRuntime\"\",\r\n        type: \"\"IntegrationRuntimeReference\"\"\r\n      }\r\n    }\r\n  }\"\r\n\r\n  Write-Host \"Create DataLake Linked Service...\"\r\n  Save-SynapseLinkedService $SynapseWorkspaceName $DataLakeAccountName $body\r\n}\r\n\r\n$body = \"{\r\n  name: \"\"TripFaresDataLakeStorageLS\"\",\r\n  properties: {\r\n    parameters: {\r\n      keyVaultName: {\r\n        type: \"\"string\"\",\r\n        defaultValue: \"\"$KeyVaultName\"\"\r\n      },\r\n      datalakeAccountName: {\r\n        type: \"\"string\"\",\r\n        defaultValue: \"\"$DataLakeAccountName\"\"\r\n      }\r\n    },\r\n    annotations: [],\r\n    type: \"\"AzureBlobFS\"\",\r\n    typeProperties: {\r\n      url: \"\"@{concat('https://',linkedService().datalakeAccountName,'.dfs.core.windows.net')}\"\",\r\n      accountKey: {\r\n        type: \"\"AzureKeyVaultSecret\"\",\r\n        store: {\r\n            referenceName: \"\"keyVaultLinkedservice\"\",\r\n            type: \"\"LinkedServiceReference\"\",\r\n            parameters: {\r\n                keyVaultName: {\r\n                    value: \"\"@linkedService().keyVaultName\"\",\r\n                    type: \"\"Expression\"\"\r\n                }\r\n            }\r\n        },\r\n        secretName: \"\"ADLS--AccountKey\"\"\r\n      }\r\n    },\r\n    connectVia: {\r\n      referenceName: \"\"AutoResolveIntegrationRuntime\"\",\r\n      type: \"\"IntegrationRuntimeReference\"\"\r\n    }\r\n  }\r\n}\"\r\n\r\nWrite-Host \"Create DataLake Linked Service...\"\r\nSave-SynapseLinkedService $SynapseWorkspaceName \"TripFaresDataLakeStorageLS\" $body\r\n\r\n#upload sample csv to public container of newly created storage account\r\n$secret = Get-AzKeyVaultSecret -VaultName $KeyVaultName -Name \"ADLS--AccountKey\" -AsPlainText\r\n$context = New-AzStorageContext -StorageAccountName $DataLakeAccountName -StorageAccountKey $secret\r\nStart-AzStorageBlobCopy -AbsoluteUri \"https://raw.githubusercontent.com/Azure/Test-Drive-Azure-Synapse-with-a-1-click-POC/main/tripDataAndFaresCSV/trip-data.csv\" -DestContainer \"public\" -DestBlob \"trip-data.csv\" -DestContext $context -Force\r\nStart-AzStorageBlobCopy -AbsoluteUri \"https://raw.githubusercontent.com/Azure/Test-Drive-Azure-Synapse-with-a-1-click-POC/main/tripDataAndFaresCSV/fares-data.csv\" -DestContainer \"public\" -DestBlob \"fares-data.csv\" -DestContext $context -Force\r\n\r\n#------------------------------------------------------------------------------------------------------------\r\n# DATA PLANE OPERATION: CREATE SQL SERVER LINKED SERVICE\r\n#------------------------------------------------------------------------------------------------------------\r\n$sqlAccountName = $AzureSQLServerName -replace (\"-\",\"_\")\r\n\r\nWrite-Host \"AzureSQLServerName: $AzureSQLServerName\"\r\n\r\n$body = \"{\r\n  name: \"\"$($AzureSQLServerName)\"\",\r\n    properties: {\r\n      annotations: [],\r\n      type: \"\"AzureSqlDatabase\"\",\r\n      typeProperties: {\r\n        connectionString: {\r\n          type: \"\"AzureKeyVaultSecret\"\",\r\n          store: {\r\n          referenceName: \"\"$KeyVaultName\"\",\r\n          type: \"\"LinkedServiceReference\"\"\r\n        },\r\n        secretName: \"\"ConnectionStrings--CnxDB\"\"\r\n      }\r\n    },\r\n    connectVia: {\r\n      referenceName: \"\"AutoResolveIntegrationRuntime\"\",\r\n      type: \"\"IntegrationRuntimeReference\"\"\r\n    },\r\n    description: \"\"This link service connects to the sql server sampldb  database...\"\"\r\n  }\r\n}\"\r\n\r\nSave-SynapseLinkedService $SynapseWorkspaceName $AzureSQLServerName $body\r\n\r\n#------------------------------------------------------------------------------------------------------------\r\n# DATA PLANE OPERATION: DEPLOY SAMPLE ARTIFACTS\r\n# Deploy sample artifcats (SQL Scripts, Datasets, Linked Services, Pipelines and Notebooks) based on chosen template.\r\n#------------------------------------------------------------------------------------------------------------\r\n\r\nif ($CtrlDeploySampleArtifacts) {\r\n  Save-SynapseSampleArtifacts $SynapseWorkspaceName $SampleArtifactCollectioName\r\n}\r\n#endregion Entry Point"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Resources/deploymentScripts",
+              "apiVersion": "2020-10-01",
+              "name": "[format('PostDeploymentScript-{0}', parameters('deploymentDatetime'))]",
+              "location": "[parameters('resourceLocation')]",
+              "kind": "AzurePowerShell",
+              "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                  "[format('{0}', parameters('deploymentScriptUAMIResourceId'))]": {}
+                }
+              },
+              "properties": {
+                "forceUpdateTag": "1",
+                "azPowerShellVersion": "7.2.4",
+                "arguments": "[parameters('synapseScriptArguments')]",
+                "cleanupPreference": "OnSuccess",
+                "scriptContent": "[variables('$fxv#0')]",
+                "retentionInterval": "P1D",
+                "supportingScriptUris": [],
+                "timeout": "PT30M"
+              }
+            }
+          ],
+          "outputs": {
+            "result": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Resources/deploymentScripts', format('PostDeploymentScript-{0}', parameters('deploymentDatetime'))), '2020-10-01').outputs.text]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'deploy_keyvault')]",
+        "[resourceId('Microsoft.Resources/deployments', 'deploy_RBAC')]",
+        "[resourceId('Microsoft.Resources/deployments', 'deploy_sqlserver')]",
+        "[resourceId('Microsoft.Resources/deployments', 'deploy_storage')]",
+        "[resourceId('Microsoft.Resources/deployments', 'deploy_synapse')]"
+      ]
+    }
+  ]
+}

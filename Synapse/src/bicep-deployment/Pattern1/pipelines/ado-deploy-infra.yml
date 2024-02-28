@@ -16,7 +16,7 @@ parameters:
 variables:
   azureSubscription: 'Azure CSP Rockfeather' 
   resourceGroupName: 'EUW_Training_Roberto'
-  synapseManagedResourceGroup: 'P1-AnalyticsFundamentals-Managed-RG'
+  synapseManagedResourceGroup: 'SynReG1'
   prefix: 'ftatoolkit'
   resourceLocation: 'westeurope'
   storageAccountType: 'Standard_LRS'
